@@ -156,6 +156,7 @@ std::array<float, 4> LensDistortion::CalculateFov(
     const DeviceParams& device_params,
     const PolynomialRadialDistortion& distortion, float screen_width_meters,
     float screen_height_meters) {
+#ifndef __APPLE__
   // FOV angles in device parameters are in degrees so they are converted
   // to radians for posterior use.
   std::array<float, 4> device_fov = {
@@ -164,6 +165,7 @@ std::array<float, 4> LensDistortion::CalculateFov(
       DegreesToRadians(device_params.left_eye_field_of_view_angles(2)),
       DegreesToRadians(device_params.left_eye_field_of_view_angles(3)),
   };
+#endif
 
   const float eye_to_screen_distance = device_params.screen_to_lens_distance();
   const float outer_distance =
@@ -182,12 +184,23 @@ std::array<float, 4> LensDistortion::CalculateFov(
   const float top_angle =
       atan(distortion.Distort({0, top_distance / eye_to_screen_distance})[1]);
 
+#ifdef __APPLE__
+  const float Scale = 0.95f;
+
+  return {
+      outer_angle * Scale,
+      inner_angle * Scale,
+      bottom_angle * Scale,
+      top_angle * Scale,
+  };
+#else
   return {
       std::min(outer_angle, device_fov[0]),
       std::min(inner_angle, device_fov[1]),
       std::min(bottom_angle, device_fov[2]),
       std::min(top_angle, device_fov[3]),
   };
+#endif
 }
 
 float LensDistortion::GetYEyeOffsetMeters(const DeviceParams& device_params,
